@@ -2,28 +2,61 @@
 layout: default
 ---
 
+<!-- Главный контейнер страницы -->
 <main class="container">
+  <!-- Основной контент -->
   <article>
     Выберите сервис для запуска
   </article>
 
+  <!-- Кнопка перехода к генератору штрихкодов -->
   <p>
-    <a href="barcode.html" role="button" class="outline contrast" style="width: 100%;">
+    <a 
+      href="barcode.html" 
+      role="button" 
+      class="contrast outline block"
+    >
       Генератор штрихкодов
     </a>
   </p>
 </main>
 
+<!-- Футер с кнопкой пожертвовать -->
+<footer class="container text-center mt-4">
+  <!-- Кнопка пожертвовать -->
+  <p>
+    <a 
+      href="#" 
+      class="contrast outline"
+    >
+      Пожертвовать
+    </a>
+  </p>
+
+  <!-- Текст пояснения -->
+  <p class="text-muted small mt-1">
+    Сервис работает исключительно на пожертвования.
+  </p>
+</footer>
+
+<!-- Подключение Telegram Web App API -->
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
+  /**
+   * Проверка наличия Telegram WebApp и настройка кнопок
+   */
   if (window.Telegram?.WebApp) {
     const tg = window.Telegram.WebApp;
 
+    // Подготовка WebApp к использованию
     tg.ready();
     tg.expand();
 
-    // Главное меню: скрываем кнопку "Назад", показываем "Закрыть"
+    // Настройка главного меню:
+    // Скрываем кнопку "Назад"
     tg.BackButton.hide();
+
+    // Показываем кнопку "Закрыть"
     tg.CloseButton.show();
   }
 </script>
