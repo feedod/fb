@@ -3,9 +3,10 @@ layout: default
 ---
 
 <main class="container">
-  <article>
-    Выберите сервис для запуска
-  </article>
+  <hgroup>
+    <h1>Инструменты</h1>
+    <p>Выберите сервис для запуска</p>
+  </hgroup>
 
   <p>
     <a href="#" role="button" class="contrast" style="width: 100%;">
@@ -13,3 +14,28 @@ layout: default
     </a>
   </p>
 </main>
+
+<!-- Подключение Telegram Web Apps -->
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+  // Проверяем, доступно ли Telegram WebApp
+  if (window.Telegram && window.Telegram.WebApp) {
+    const tg = window.Telegram.WebApp;
+
+    // Инициализация WebApp
+    tg.ready();
+
+    // Разворачиваем WebApp на весь доступный экран
+    tg.expand();
+
+    // Настройка основной кнопки Telegram
+    tg.MainButton.setParams({
+      text: "Закрыть",
+      color: "#0088cc",
+      text_color: "#ffffff"
+    });
+
+    // Обработка нажатия на основную кнопку
+    tg.MainButton.onClick(() => tg.close());
+  }
+</script>
