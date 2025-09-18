@@ -10,7 +10,7 @@ layout: default
     <input
       type="number"
       id="barcodeInput"
-      placeholder="Введите 12 или 13 цифр"
+      placeholder="Введите данные для EAN-13"
       x-model="inputValue"
       style="width: 100%; padding: 0.6em; font-size: 1em; box-sizing: border-box;"
     >
@@ -48,36 +48,51 @@ layout: default
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 <!-- Telegram WebApp -->
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
 <script>
   document.addEventListener("alpine:init", () => {
     Alpine.data("barcodeApp", () => ({
       inputValue: "",
       barcodeUrl: "",
       error: false,
-      errorMessage: "Введите ровно 12 или 13 цифр",
+      errorMessage: "",
 
-      handleGenerate() {
+      async handleGenerate() {
         // Оставляем только цифры
-        this.inputValue = this.inputValue.replace(/\D/g, "");
+        const sanitized = this.inputValue.replace(/\D/g, "");
 
-        // Проверка: только 12 или 13 цифр
-        if (!/^\d{12,13}$/.test(this.inputValue)) {
+        if (!sanitized) {
           this.error = true;
+          this.errorMessage = "Поле не может быть пустым";
           this.barcodeUrl = "";
           return;
         }
 
-        // Сбрасываем ошибку и генерируем штрихкод
+        // Сбрасываем ошибку перед запросом
         this.error = false;
-        this.generateBarcode();
+        this.errorMessage = "";
 
-        // Очищаем поле только после успешной генерации
-        this.inputValue = "";
-      },
+        try {
+          // Формируем URL для генерации EAN-13 через QuickChart API
+          const url = `https://quickchart.io/barcode?type=ean13&text=${encodeURIComponent(sanitized)}&width=600&height=150`;
 
-      generateBarcode() {
-        this.barcodeUrl =
-          `https://quickchart.io/barcode?type=ean13&text=${encodeURIComponent(this.inputValue)}&width=600&height=150`;
+          // Проверка доступности API (HEAD запрос)
+          const response = await fetch(url, { method: "HEAD" });
+          if (!response.ok) {
+            throw new Error("API вернул ошибку при генерации штрихкода");
+          }
+
+          // Отображаем штрихкод
+          this.barcodeUrl = url;
+
+          // Очищаем поле после успешной генерации
+          this.inputValue = "";
+
+        } catch (err) {
+          this.error = true;
+          this.barcodeUrl = "";
+          this.errorMessage = err.message || "Произошла ошибка при генерации штрихкода";
+        }
       }
     }));
   });
