@@ -5,7 +5,7 @@ layout: default
 <main class="container" x-data="barcodeApp">
   <h1>Генератор штрихкодов EAN</h1>
 
-  <p style="display: flex; gap: 0.5em;">
+  <p style="display: flex; gap: 0.5em; align-items: stretch;">
     <input
       type="number"
       id="barcodeInput"
@@ -18,9 +18,12 @@ layout: default
     >
     <button
       @click="scanQR"
-      style="padding: 0 0.6em; font-size: 1.2em; cursor: pointer; border-radius: 4px; border: 1px solid #28a745; background: none; display: flex; align-items: center; justify-content: center;"
+      style="padding: 0; display: flex; align-items: center; justify-content: center; background: none; border: none; cursor: pointer;"
+      title="Сканировать QR"
     >
-      📷
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M4 4h4v4H4V4zm0 6h4v4H4v-4zm0 6h4v4H4v-4zm6-12h4v4h-4V4zm6 0h4v4h-4V4zm0 6h4v4h-4v-4zm0 6h4v4h-4v-4zm-6 0h4v4h-4v-4z"/>
+      </svg>
     </button>
   </p>
 
@@ -54,13 +57,8 @@ layout: default
 </main>
 
 <style>
-  .error-field {
-    border-color: red !important;
-  }
-  .disabled-button {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
+  .error-field { border-color: red !important; }
+  .disabled-button { opacity: 0.6; cursor: not-allowed; }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
