@@ -22,12 +22,12 @@ layout: default
     Введите ровно 12 или 13 цифр
   </p>
 
-  <p>
+  <div style="text-align: center; margin-top: 1em;">
     <svg
       id="barcodeSVG"
-      style="width: 100%; height: 250px; display: block; margin: 1em auto 0 auto;"
+      style="width: 100%; height: 150px; display: inline-block;"
     ></svg>
-  </p>
+  </div>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
@@ -39,8 +39,8 @@ layout: default
     const invalidHelper = document.getElementById("invalid-helper");
 
     /**
-     * Генерация штрихкода на всю ширину SVG
-     * @param {string} value - число для генерации EAN-13
+     * Генерация штрихкода EAN-13 на всю ширину SVG
+     * @param {string} value
      */
     const generateBarcode = value => {
       const containerWidth = svg.clientWidth;
@@ -49,17 +49,24 @@ layout: default
       JsBarcode(svg, value, {
         format: "EAN13",
         displayValue: true,
+        textAlign: "center",
         width: barWidth,
-        height: 250,
+        height: 150,
         margin: 0
       });
     };
 
     /**
-     * Проверка введённого значения и показ ошибки
+     * Проверка ввода и показ ошибки
      * @param {string} value
      */
     const validateInput = value => {
+      if (value === "") {
+        svg.innerHTML = "";
+        invalidHelper.style.display = "none";
+        return;
+      }
+
       if (/^\d{12,13}$/.test(value)) {
         generateBarcode(value);
         invalidHelper.style.display = "none";
@@ -69,13 +76,12 @@ layout: default
       }
     };
 
-    // Обработчик ввода
     input.addEventListener("input", () => {
       const value = input.value.trim();
       validateInput(value);
     });
 
-    // Настройка кнопок TWA (только если открыто в Telegram)
+    // Настройка кнопок Telegram Web App
     if (window.Telegram?.WebApp) {
       const tg = window.Telegram.WebApp;
       tg.ready();
