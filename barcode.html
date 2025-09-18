@@ -18,7 +18,7 @@ layout: default
     >
     <button
       @click="scanQR"
-      style="padding: 0.6em 1em; font-size: 1em; cursor: pointer; border-radius: 4px; border: 1px solid #28a745; background-color: #28a745; color: white;"
+      style="padding: 0 0.6em; font-size: 1.2em; cursor: pointer; border-radius: 4px; border: 1px solid #28a745; background: none; display: flex; align-items: center; justify-content: center;"
     >
       📷
     </button>
@@ -145,7 +145,6 @@ document.addEventListener("alpine:init", () => {
         this.errorMessage = "Сканирование недоступно в этом окружении.";
         return;
       }
-
       window.Telegram.WebApp.showScanQrPopup({ text: "Сканируйте QR код" })
         .then(result => {
           if (!result || !result.data) return;
