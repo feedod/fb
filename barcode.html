@@ -1,1 +1,50 @@
+---
+layout: default
+---
 
+<main class="container">
+  <h1>Генератор штрихкодов</h1>
+
+  <p>
+    <input id="barcodeInput" type="text" placeholder="Введите цифры" style="width: 100%; padding: 0.5em; font-size: 1em;">
+  </p>
+
+  <p>
+    <a href="index.html" role="button" class="outline contrast" style="width: 100%;">
+      Назад
+    </a>
+  </p>
+
+  <p>
+    <img id="barcodeImage" alt="Штрихкод" style="display: block; margin: 1em auto; max-width: 100%;">
+  </p>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+  if (window.Telegram?.WebApp) {
+    const tg = window.Telegram.WebApp;
+
+    tg.ready();
+    tg.expand();
+
+    // Настройка кнопки TWA "Назад"
+    tg.BackButton.show();
+    tg.BackButton.onClick(() => {
+      window.location.href = "index.html";
+    });
+  }
+
+  const input = document.getElementById("barcodeInput");
+  const image = document.getElementById("barcodeImage");
+
+  input.addEventListener("input", () => {
+    const value = input.value.trim();
+    if (/^\d+$/.test(value)) {
+      JsBarcode("#barcodeImage", value, { format: "CODE128", displayValue: true, width: 2, height: 80 });
+    } else {
+      image.src = "";
+    }
+  });
+</script>
