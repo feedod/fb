@@ -24,7 +24,7 @@ layout: default
     style="color: red; font-size: 0.9em; display: none;"
   ></p>
 
-  <!-- Кнопка -->
+  <!-- Кнопка генерации -->
   <p>
     <button
       @click="handleGenerate"
@@ -56,40 +56,40 @@ layout: default
       error: false,
       errorMessage: "Введите ровно 12 или 13 цифр",
 
-      // Генерация по кнопке
       handleGenerate() {
-        this.inputValue = this.inputValue.replace(/\D/g, ""); // оставляем только цифры
+        // Оставляем только цифры
+        this.inputValue = this.inputValue.replace(/\D/g, "");
 
+        // Проверка: только 12 или 13 цифр
         if (!/^\d{12,13}$/.test(this.inputValue)) {
           this.error = true;
           this.barcodeUrl = "";
           return;
         }
 
+        // Сбрасываем ошибку и генерируем штрихкод
         this.error = false;
         this.generateBarcode();
 
-        // очищаем поле только при успехе
+        // Очищаем поле только после успешной генерации
         this.inputValue = "";
       },
 
-      // Запрос к API для генерации штрихкода
       generateBarcode() {
         this.barcodeUrl =
-          `https://quickchart.io/barcode?` +
-          `type=ean13&text=${encodeURIComponent(this.inputValue)}&width=600&height=150`;
+          `https://quickchart.io/barcode?type=ean13&text=${encodeURIComponent(this.inputValue)}&width=600&height=150`;
       }
     }));
   });
 
-  // Поддержка Telegram WebApp
+  // Telegram WebApp
   if (window.Telegram?.WebApp) {
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
 
     tg.BackButton.show();
-    tg.BackButton.onClick(() => (window.location.href = "index.html"));
+    tg.BackButton.onClick(() => window.location.href = "index.html");
     tg.CloseButton.hide();
   }
 </script>
