@@ -22,7 +22,7 @@ layout: default
   <p>
     <svg
       id="barcodeSVG"
-      style="width: 1000px; height: 250px; display: block; margin: 0 auto;"
+      style="width: 100%; height: auto; display: block; margin: 0 auto;"
     ></svg>
   </p>
 </main>
@@ -34,6 +34,11 @@ layout: default
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
+
+    tg.BackButton.show();
+    tg.BackButton.onClick(() => {
+      window.location.href = "index.html";
+    });
   }
 
   const input = document.getElementById("barcodeInput");
@@ -48,7 +53,7 @@ layout: default
         format: "EAN13",
         displayValue: true,
         width: 2,
-        height: 250,
+        height: 100,
         margin: 10
       });
       errorMessage.style.display = "none";
