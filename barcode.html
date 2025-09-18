@@ -3,20 +3,19 @@ layout: default
 ---
 
 <main class="container" x-data="barcodeApp">
-  <h1>Генератор штрихкодов EAN-13</h1>
+  <h1>Генератор штрихкодов</h1>
 
   <!-- Поле ввода -->
   <p>
     <input
       type="number"
-      id="barcodeInput"
-      placeholder="Введите данные для EAN-13"
+      placeholder="Введите цифры"
       x-model="inputValue"
       style="width: 100%; padding: 0.6em; font-size: 1em; box-sizing: border-box;"
     >
   </p>
 
-  <!-- Ошибка -->
+  <!-- Сообщение об ошибке -->
   <p
     id="invalid-helper"
     x-show="error"
@@ -50,17 +49,19 @@ layout: default
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <script>
-  document.addEventListener("alpine:init", () => {
-    Alpine.data("barcodeApp", () => ({
-      inputValue: "",
-      barcodeUrl: "",
-      error: false,
-      errorMessage: "",
+document.addEventListener("alpine:init", () => {
+  Alpine.data("barcodeApp", () => ({
+    inputValue: "",
+    barcodeUrl: "",
+    error: false,
+    errorMessage: "",
 
-      async handleGenerate() {
-        // Оставляем только цифры
+    async handleGenerate() {
+      try {
+        // Фильтрация ввода: оставляем только цифры
         const sanitized = this.inputValue.replace(/\D/g, "");
 
+        // Проверка на пустое поле
         if (!sanitized) {
           this.error = true;
           this.errorMessage = "Поле не может быть пустым";
@@ -68,43 +69,55 @@ layout: default
           return;
         }
 
-        // Сбрасываем ошибку перед запросом
+        // Определяем тип штрихкода
+        let barcodeType = "";
+        if (sanitized.length >= 7 && sanitized.length <= 8) {
+          barcodeType = "ean8";
+        } else if (sanitized.length >= 12 && sanitized.length <= 13) {
+          barcodeType = "ean13";
+        } else {
+          this.error = true;
+          this.errorMessage = "Введите корректное количество цифр для EAN-8 или EAN-13";
+          this.barcodeUrl = "";
+          return;
+        }
+
+        // Сбрасываем ошибку перед генерацией
         this.error = false;
         this.errorMessage = "";
 
-        try {
-          // Формируем URL для генерации EAN-13 через QuickChart API
-          const url = `https://quickchart.io/barcode?type=ean13&text=${encodeURIComponent(sanitized)}&width=600&height=150`;
+        // Формируем URL QuickChart API
+        const url = `https://quickchart.io/barcode?type=${barcodeType}&text=${encodeURIComponent(sanitized)}&width=600&height=150`;
 
-          // Проверка доступности API (HEAD запрос)
-          const response = await fetch(url, { method: "HEAD" });
-          if (!response.ok) {
-            throw new Error("API вернул ошибку при генерации штрихкода");
-          }
-
-          // Отображаем штрихкод
-          this.barcodeUrl = url;
-
-          // Очищаем поле после успешной генерации
-          this.inputValue = "";
-
-        } catch (err) {
-          this.error = true;
-          this.barcodeUrl = "";
-          this.errorMessage = err.message || "Произошла ошибка при генерации штрихкода";
+        // Проверка доступности API
+        const response = await fetch(url, { method: "HEAD" });
+        if (!response.ok) {
+          throw new Error("Не удалось сгенерировать штрихкод, попробуйте ещё раз");
         }
+
+        // Отображаем штрихкод
+        this.barcodeUrl = url;
+
+        // Очищаем поле после успешной генерации
+        this.inputValue = "";
+
+      } catch (err) {
+        this.error = true;
+        this.barcodeUrl = "";
+        this.errorMessage = err.message || "Произошла ошибка при генерации штрихкода";
       }
-    }));
-  });
+    }
+  }));
+});
 
-  // Telegram WebApp
-  if (window.Telegram?.WebApp) {
-    const tg = window.Telegram.WebApp;
-    tg.ready();
-    tg.expand();
+// Telegram WebApp
+if (window.Telegram?.WebApp) {
+  const tg = window.Telegram.WebApp;
+  tg.ready();
+  tg.expand();
 
-    tg.BackButton.show();
-    tg.BackButton.onClick(() => window.location.href = "index.html");
-    tg.CloseButton.hide();
-  }
+  tg.BackButton.show();
+  tg.BackButton.onClick(() => window.location.href = "index.html");
+  tg.CloseButton.hide();
+}
 </script>
