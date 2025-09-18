@@ -25,7 +25,7 @@ layout: default
   <div style="text-align: center; margin-top: 1em;">
     <svg
       id="barcodeSVG"
-      style="width: 100%; height: 100px; display: inline-block;"
+      style="width: 100%; height: 150px; display: inline-block;"
     ></svg>
   </div>
 </main>
@@ -42,45 +42,48 @@ layout: default
 
     /**
      * Генерация штрихкода EAN-13 в <svg>
+     * Автоматическая подгонка ширины полос под контейнер
      * @param {string} value
      */
     const generateBarcode = value => {
       const containerWidth = svg.clientWidth;
-      const barWidth = Math.max(containerWidth / (value.length * 8), 0.5); // внутренний отступ 0.5px
+      const barWidth = Math.max(containerWidth / (value.length * 10), 1);
 
       JsBarcode(svg, value, {
         format: "EAN13",
         displayValue: true,
         textAlign: "center",
         width: barWidth,
-        height: 100,
-        margin: 0.5
+        height: 150,
+        margin: 0
       });
     };
 
     /**
-     * Проверка ввода и показ ошибки
+     * Проверка корректности ввода
      * @param {string} value
      */
     const validateInput = value => {
-      if (value === "") {
+      if (!value) {
         svg.innerHTML = "";
         invalidHelper.style.display = "none";
-        return;
+        return false;
       }
 
-      if (/^\d{12,13}$/.test(value)) {
-        generateBarcode(value);
-        invalidHelper.style.display = "none";
-      } else {
+      const isValid = /^\d{12,13}$/.test(value);
+      if (!isValid) {
         svg.innerHTML = "";
         invalidHelper.style.display = "block";
+      } else {
+        invalidHelper.style.display = "none";
+        generateBarcode(value);
       }
+      return isValid;
     };
 
+    // Обработчик ввода
     input.addEventListener("input", () => {
-      const value = input.value.trim();
-      validateInput(value);
+      validateInput(input.value.trim());
     });
 
     // Настройка кнопок Telegram Web App
@@ -90,9 +93,7 @@ layout: default
       tg.expand();
 
       tg.BackButton.show();
-      tg.BackButton.onClick(() => {
-        window.location.href = "index.html";
-      });
+      tg.BackButton.onClick(() => window.location.href = "index.html");
       tg.CloseButton.hide();
     }
   })();
