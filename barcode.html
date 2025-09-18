@@ -5,25 +5,28 @@ layout: default
 <main class="container" x-data="barcodeApp">
   <h1>Генератор штрихкодов</h1>
 
-  <!-- Поле ввода -->
+  <!-- Ввод -->
   <p>
     <input
       type="number"
-      placeholder="Введите цифры"
+      placeholder="Введите цифры для EAN-8 или EAN-13"
       x-model="inputValue"
+      @input="inputValue = inputValue.replace(/\D/g,'')"
       style="width: 100%; padding: 0.6em; font-size: 1em; box-sizing: border-box;"
     >
   </p>
 
-  <!-- Сообщение об ошибке -->
+  <!-- Подсказка -->
+  <p style="color: #555; font-size: 0.9em; margin-top: 0.2em;" x-text="getHint()"></p>
+
+  <!-- Ошибка -->
   <p
-    id="invalid-helper"
     x-show="error"
     x-text="errorMessage"
     style="color: red; font-size: 0.9em; display: none;"
   ></p>
 
-  <!-- Кнопка генерации -->
+  <!-- Кнопка -->
   <p>
     <button
       @click="handleGenerate"
@@ -38,14 +41,12 @@ layout: default
     <img
       x-show="barcodeUrl"
       :src="barcodeUrl"
-      style="width: 100%; max-width: 600px; height: 150px; display: inline-block;"
+      style="width: 100%; max-width: 600px; height: auto; display: inline-block;"
     >
   </div>
 </main>
 
-<!-- Alpine.js -->
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-<!-- Telegram WebApp -->
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <script>
@@ -56,12 +57,31 @@ document.addEventListener("alpine:init", () => {
     error: false,
     errorMessage: "",
 
+    getHint() {
+      const len = this.inputValue.length;
+      if (len === 0) return "Введите цифры для генерации штрихкода";
+      if (len <= 7) return "Для EAN-8 вводите 7 цифр (контрольная цифра добавится автоматически)";
+      if (len <= 12) return "Для EAN-13 вводите 12 цифр (контрольная цифра добавится автоматически)";
+      if (len === 8) return "EAN-8 готово к генерации";
+      if (len === 13) return "EAN-13 готово к генерации";
+      return "Введите корректное количество цифр для EAN-8 или EAN-13";
+    },
+
+    computeCheckDigit(number, type) {
+      const digits = number.split("").map(d => parseInt(d, 10));
+      let sum = 0;
+      if (type === "ean8") {
+        for (let i = 0; i < 7; i++) sum += (i % 2 === 0 ? digits[i] * 3 : digits[i]);
+      } else if (type === "ean13") {
+        for (let i = 0; i < 12; i++) sum += (i % 2 === 0 ? digits[i] : digits[i] * 3);
+      }
+      const check = (10 - (sum % 10)) % 10;
+      return check.toString();
+    },
+
     async handleGenerate() {
       try {
-        // Фильтрация ввода: оставляем только цифры
         const sanitized = this.inputValue.replace(/\D/g, "");
-
-        // Проверка на пустое поле
         if (!sanitized) {
           this.error = true;
           this.errorMessage = "Поле не может быть пустым";
@@ -69,12 +89,21 @@ document.addEventListener("alpine:init", () => {
           return;
         }
 
-        // Определяем тип штрихкода
         let barcodeType = "";
-        if (sanitized.length >= 7 && sanitized.length <= 8) {
+        let numberToEncode = "";
+
+        if (sanitized.length === 7) {
           barcodeType = "ean8";
-        } else if (sanitized.length >= 12 && sanitized.length <= 13) {
+          numberToEncode = sanitized + this.computeCheckDigit(sanitized, barcodeType);
+        } else if (sanitized.length === 12) {
           barcodeType = "ean13";
+          numberToEncode = sanitized + this.computeCheckDigit(sanitized, barcodeType);
+        } else if (sanitized.length === 8) {
+          barcodeType = "ean8";
+          numberToEncode = sanitized;
+        } else if (sanitized.length === 13) {
+          barcodeType = "ean13";
+          numberToEncode = sanitized;
         } else {
           this.error = true;
           this.errorMessage = "Введите корректное количество цифр для EAN-8 или EAN-13";
@@ -82,25 +111,22 @@ document.addEventListener("alpine:init", () => {
           return;
         }
 
-        // Сбрасываем ошибку перед генерацией
         this.error = false;
         this.errorMessage = "";
 
-        // Формируем URL QuickChart API
-        const url = `https://quickchart.io/barcode?type=${barcodeType}&text=${encodeURIComponent(sanitized)}&width=600&height=150`;
+        // Автоматическая ширина штрихов для TSD и всех экранов
+        const screenWidth = Math.min(window.innerWidth * 0.95, 600);
+        const minBarWidth = 2; // минимальная ширина штриха
+        const totalBars = numberToEncode.length * 7; // ориентировочное количество полос
+        const width = Math.max(screenWidth, totalBars * minBarWidth);
+        const height = 150;
 
-        // Проверка доступности API
+        const url = `https://quickchart.io/barcode?type=${barcodeType}&text=${encodeURIComponent(numberToEncode)}&width=${Math.floor(width)}&height=${height}`;
         const response = await fetch(url, { method: "HEAD" });
-        if (!response.ok) {
-          throw new Error("Не удалось сгенерировать штрихкод, попробуйте ещё раз");
-        }
+        if (!response.ok) throw new Error("Не удалось сгенерировать штрихкод, попробуйте ещё раз");
 
-        // Отображаем штрихкод
         this.barcodeUrl = url;
-
-        // Очищаем поле после успешной генерации
         this.inputValue = "";
-
       } catch (err) {
         this.error = true;
         this.barcodeUrl = "";
