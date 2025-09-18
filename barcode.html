@@ -2,98 +2,94 @@
 layout: default
 ---
 
-<main class="container">
+<main class="container" x-data="barcodeApp">
   <h1>Генератор штрихкодов EAN-13</h1>
 
+  <!-- Поле ввода -->
   <p>
     <input
       type="number"
       id="barcodeInput"
-      name="number"
       placeholder="Введите 12 или 13 цифр"
-      min="100000000000"
-      max="9999999999999"
-      style="width: 100%; padding: 0.5em; font-size: 1em; box-sizing: border-box;"
+      x-model="inputValue"
+      style="width: 100%; padding: 0.6em; font-size: 1em; box-sizing: border-box;"
     >
   </p>
 
-  <p id="invalid-helper" style="color: red; font-size: 0.9em; display: none;">
-    Введите ровно 12 или 13 цифр
+  <!-- Ошибка -->
+  <p
+    id="invalid-helper"
+    x-show="error"
+    x-text="errorMessage"
+    style="color: red; font-size: 0.9em; display: none;"
+  ></p>
+
+  <!-- Кнопка -->
+  <p>
+    <button
+      @click="handleGenerate"
+      style="width: 100%; padding: 0.7em; font-size: 1em; cursor: pointer;"
+    >
+      Сгенерировать
+    </button>
   </p>
 
+  <!-- Штрихкод -->
   <div style="text-align: center; margin-top: 1em;">
-    <svg
-      id="barcodeSVG"
-      style="width: 100%; height: 150px; display: inline-block;"
-    ></svg>
+    <img
+      x-show="barcodeUrl"
+      :src="barcodeUrl"
+      style="width: 100%; max-width: 600px; height: 150px; display: inline-block;"
+    >
   </div>
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+<!-- Alpine.js -->
+<script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+<!-- Telegram WebApp -->
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
-  (() => {
-    "use strict";
+  document.addEventListener("alpine:init", () => {
+    Alpine.data("barcodeApp", () => ({
+      inputValue: "",
+      barcodeUrl: "",
+      error: false,
+      errorMessage: "Введите ровно 12 или 13 цифр",
 
-    const input = document.getElementById("barcodeInput");
-    const svg = document.getElementById("barcodeSVG");
-    const invalidHelper = document.getElementById("invalid-helper");
+      // Генерация по кнопке
+      handleGenerate() {
+        this.inputValue = this.inputValue.replace(/\D/g, ""); // оставляем только цифры
 
-    /**
-     * Генерация штрихкода EAN-13 через JsBarcode
-     * @param {string} value
-     */
-    const generateBarcode = (value) => {
-      const containerWidth = svg.clientWidth;
-      const barWidth = Math.max(containerWidth / (value.length * 10), 1);
+        if (!/^\d{12,13}$/.test(this.inputValue)) {
+          this.error = true;
+          this.barcodeUrl = "";
+          return;
+        }
 
-      JsBarcode(svg, value, {
-        format: "EAN13",
-        displayValue: true,
-        textAlign: "center",
-        width: barWidth,
-        height: 150,
-        margin: 0
-      });
-    };
+        this.error = false;
+        this.generateBarcode();
 
-    /**
-     * Проверка корректности ввода (12–13 цифр)
-     * @param {string} value
-     */
-    const validateInput = (value) => {
-      if (!value) {
-        svg.innerHTML = "";
-        invalidHelper.style.display = "none";
-        return false;
+        // очищаем поле только при успехе
+        this.inputValue = "";
+      },
+
+      // Запрос к API для генерации штрихкода
+      generateBarcode() {
+        this.barcodeUrl =
+          `https://quickchart.io/barcode?` +
+          `type=ean13&text=${encodeURIComponent(this.inputValue)}&width=600&height=150`;
       }
+    }));
+  });
 
-      const isValid = /^\d{12,13}$/.test(value);
-      if (!isValid) {
-        svg.innerHTML = "";
-        invalidHelper.style.display = "block";
-      } else {
-        invalidHelper.style.display = "none";
-        generateBarcode(value);
-      }
-      return isValid;
-    };
+  // Поддержка Telegram WebApp
+  if (window.Telegram?.WebApp) {
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
 
-    // Обработчик ввода: только цифры
-    input.addEventListener("input", () => {
-      input.value = input.value.replace(/\D/g, ""); // удаляем все нецифры
-      validateInput(input.value.trim());
-    });
-
-    // Настройка кнопок Telegram Web App
-    if (window.Telegram?.WebApp) {
-      const tg = window.Telegram.WebApp;
-      tg.ready();
-      tg.expand();
-
-      tg.BackButton.show();
-      tg.BackButton.onClick(() => window.location.href = "index.html");
-      tg.CloseButton.hide();
-    }
-  })();
+    tg.BackButton.show();
+    tg.BackButton.onClick(() => (window.location.href = "index.html"));
+    tg.CloseButton.hide();
+  }
 </script>
