@@ -8,21 +8,30 @@ layout: default
   <p>
     <input
       type="number"
-      name="number"
       id="barcodeInput"
+      name="number"
       placeholder="Введите 12 или 13 цифр"
       aria-label="Number"
+      aria-invalid="false"
+      aria-describedby="invalid-helper"
+      min="100000000000"
+      max="9999999999999"
+      maxlength="13"
+      style="width: 100%; padding: 0.5em; font-size: 1em; box-sizing: border-box;"
     >
   </p>
 
-  <p id="errorMessage" style="color: red; font-size: 0.9em; display: none;">
+  <small
+    id="invalid-helper"
+    style="color: red; font-size: 0.9em; display: none;"
+  >
     Введите ровно 12 или 13 цифр
-  </p>
+  </small>
 
   <p>
     <svg
       id="barcodeSVG"
-      style="width: 100%; height: auto; display: block; margin: 0 auto;"
+      style="width: 100%; height: auto; display: block; margin: 1em auto 0 auto;"
     ></svg>
   </p>
 </main>
@@ -30,10 +39,12 @@ layout: default
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
-  const appContent = document.getElementById("appContent");
+  (function() {
+    const appContent = document.getElementById("appContent");
 
-  // Проверяем, открыта ли страница в Telegram Web App
-  if (window.Telegram?.WebApp) {
+    // Проверяем, открыта ли страница в TWA
+    if (!window.Telegram?.WebApp) return;
+
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
@@ -44,29 +55,37 @@ layout: default
       window.location.href = "index.html";
     });
 
-    // Показываем содержимое только в TWA
+    // Показываем содержимое страницы
     appContent.style.display = "block";
 
     const input = document.getElementById("barcodeInput");
     const svg = document.getElementById("barcodeSVG");
-    const errorMessage = document.getElementById("errorMessage");
+    const invalidHelper = document.getElementById("invalid-helper");
+
+    // Функция генерации штрихкода
+    const generateBarcode = value => {
+      JsBarcode(svg, value, {
+        format: "EAN13",
+        displayValue: true,
+        width: 2,
+        height: 100,
+        margin: 10
+      });
+    };
 
     input.addEventListener("input", () => {
       const value = input.value.trim();
 
+      // Проверка: только 12 или 13 цифр
       if (/^\d{12,13}$/.test(value)) {
-        JsBarcode(svg, value, {
-          format: "EAN13",
-          displayValue: true,
-          width: 2,
-          height: 100,
-          margin: 10
-        });
-        errorMessage.style.display = "none";
+        generateBarcode(value);
+        input.setAttribute("aria-invalid", "false");
+        invalidHelper.style.display = "none";
       } else {
         svg.innerHTML = "";
-        errorMessage.style.display = "block";
+        input.setAttribute("aria-invalid", "true");
+        invalidHelper.style.display = "block";
       }
     });
-  }
+  })();
 </script>
