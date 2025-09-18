@@ -2,7 +2,7 @@
 layout: default
 ---
 
-<main class="container" id="appContent" style="display: none;">
+<main class="container" id="appContent">
   <h1>Генератор штрихкодов EAN-13</h1>
 
   <p>
@@ -21,10 +21,7 @@ layout: default
     >
   </p>
 
-  <small
-    id="invalid-helper"
-    style="color: red; font-size: 0.9em; display: none;"
-  >
+  <small id="invalid-helper" style="display: none;">
     Введите ровно 12 или 13 цифр
   </small>
 
@@ -40,24 +37,6 @@ layout: default
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
   (function() {
-    const appContent = document.getElementById("appContent");
-
-    // Показываем контент только в TWA
-    if (!window.Telegram?.WebApp) return;
-
-    const tg = window.Telegram.WebApp;
-    tg.ready();
-    tg.expand();
-
-    // Генератор: показываем "Назад", скрываем "Закрыть"
-    tg.BackButton.show();
-    tg.BackButton.onClick(() => {
-      window.location.href = "index.html";
-    });
-    tg.CloseButton.hide();
-
-    appContent.style.display = "block";
-
     const input = document.getElementById("barcodeInput");
     const svg = document.getElementById("barcodeSVG");
     const invalidHelper = document.getElementById("invalid-helper");
@@ -86,5 +65,18 @@ layout: default
         invalidHelper.style.display = "block";
       }
     });
+
+    // Настройка кнопок TWA только если открыто в Telegram
+    if (window.Telegram?.WebApp) {
+      const tg = window.Telegram.WebApp;
+      tg.ready();
+      tg.expand();
+
+      tg.BackButton.show();
+      tg.BackButton.onClick(() => {
+        window.location.href = "index.html";
+      });
+      tg.CloseButton.hide();
+    }
   })();
 </script>
