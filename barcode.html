@@ -42,27 +42,27 @@ layout: default
   (function() {
     const appContent = document.getElementById("appContent");
 
-    // Проверяем, открыта ли страница в TWA
+    // Показываем контент только в TWA
     if (!window.Telegram?.WebApp) return;
 
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
 
-    // Настройка кнопки "Назад"
+    // Генератор: показываем "Назад", скрываем "Закрыть"
     tg.BackButton.show();
     tg.BackButton.onClick(() => {
       window.location.href = "index.html";
     });
+    tg.CloseButton.hide();
 
-    // Показываем содержимое страницы
     appContent.style.display = "block";
 
     const input = document.getElementById("barcodeInput");
     const svg = document.getElementById("barcodeSVG");
     const invalidHelper = document.getElementById("invalid-helper");
 
-    // Функция генерации штрихкода
+    // Генерация штрихкода
     const generateBarcode = value => {
       JsBarcode(svg, value, {
         format: "EAN13",
@@ -76,7 +76,6 @@ layout: default
     input.addEventListener("input", () => {
       const value = input.value.trim();
 
-      // Проверка: только 12 или 13 цифр
       if (/^\d{12,13}$/.test(value)) {
         generateBarcode(value);
         input.setAttribute("aria-invalid", "false");
