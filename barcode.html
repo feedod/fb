@@ -5,26 +5,28 @@ layout: default
 <main class="container" x-data="barcodeApp">
   <h1>Генератор штрихкодов EAN</h1>
 
-  <!-- Ввод кода -->
+  <!-- Поле ввода для кода EAN -->
   <p>
     <input
       type="number"
-      placeholder="Введите цифры для EAN-8 или EAN-13 (включая контрольную цифру)"
+      id="barcodeInput"
+      placeholder="Введите 8 или 13 цифр (включая контрольную)"
       x-model="inputValue"
       @input="validateEAN()"
+      aria-describedby="hintText"
       :class="{'error-field': error}"
       style="width: 100%; padding: 0.6em; font-size: 1em; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;"
     >
   </p>
 
-  <!-- Подсказка пользователю -->
-  <p style="color: #555; font-size: 0.9em; margin-top: 0.2em;" x-text="getHint()"></p>
-
-  <!-- Ошибка -->
+  <!-- Подсказка / текст ошибки -->
   <p
-    x-show="error"
-    x-text="errorMessage"
-    style="color: red; font-size: 0.9em; display: none;"
+    id="hintText"
+    :style="{ color: error ? 'red' : '#555' }"
+    style="font-size: 0.9em; margin-top: 0.2em;"
+    x-text="getHint()"
+    role="status"
+    aria-live="polite"
   ></p>
 
   <!-- Кнопка генерации -->
@@ -59,39 +61,37 @@ layout: default
   }
 </style>
 
-<!-- Alpine.js для реактивности -->
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-
-<!-- Telegram WebApp -->
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <script>
 /**
- * Идеальный генератор штрихкодов EAN
- * Поддержка: EAN-8, EAN-13
- * Полная проверка: пустое поле, неверная длина, контрольная цифра, ошибка API
+ * Идеальный генератор штрихкодов EAN-8 / EAN-13
+ * Полная проверка: пустое поле, неверная длина, контрольная цифра, ошибки API
+ * Пользователь сам вводит контрольную цифру
+ * Поддержка TWA (Telegram WebApp)
  */
 document.addEventListener("alpine:init", () => {
   Alpine.data("barcodeApp", () => ({
-    inputValue: "",        // Значение поля ввода
-    barcodeUrl: "",        // URL сгенерированного штрихкода
-    error: false,          // Флаг ошибки
-    errorMessage: "",      // Сообщение об ошибке
+    inputValue: "",
+    barcodeUrl: "",
+    error: false,
+    errorMessage: "",
 
     /**
-     * Получение подсказки для пользователя
+     * Подсказка пользователю с учётом ошибок
      */
     getHint() {
+      if (!this.inputValue) return "Введите цифры для генерации штрихкода, включая контрольную цифру.";
+      if (this.error) return this.errorMessage;
+
       const len = this.inputValue.length;
-      if (len === 0) return "Введите цифры для генерации штрихкода, включая контрольную цифру.";
-      if (len <= 7) return "EAN-8: введите 8 цифр, последняя — контрольная.";
-      if (len <= 12) return "EAN-13: введите 13 цифр, последняя — контрольная.";
-      if (len === 8 || len === 13) return "Код готов к генерации.";
-      return "Введите корректное количество цифр для EAN-8 или EAN-13.";
+      if (![8,13].includes(len)) return "Введите правильное количество цифр: 8 для EAN-8 или 13 для EAN-13.";
+      return "Код готов к генерации.";
     },
 
     /**
-     * Вычисление контрольной цифры для проверки
+     * Вычисление контрольной цифры EAN-8 или EAN-13
      * @param {string} number - цифры без контрольной
      * @param {string} type - "ean8" или "ean13"
      * @returns {string} контрольная цифра
@@ -104,49 +104,46 @@ document.addEventListener("alpine:init", () => {
       } else if (type === "ean13") {
         for (let i = 0; i < 12; i++) sum += (i % 2 === 0 ? digits[i] : digits[i] * 3);
       }
-      const check = (10 - (sum % 10)) % 10;
-      return check.toString();
+      return (10 - (sum % 10)) % 10 + "";
     },
 
     /**
-     * Валидация введённого EAN
+     * Валидация введённого кода EAN
      */
     validateEAN() {
-      try {
-        const sanitized = this.inputValue.replace(/\D/g, "");
-        if (!sanitized) {
-          this.error = true;
-          this.errorMessage = "Поле пустое. Пожалуйста, введите цифры.";
-          return;
-        }
+      const sanitized = this.inputValue.replace(/\D/g, "");
 
-        if (![8,13].includes(sanitized.length)) {
-          this.error = true;
-          this.errorMessage = "Неверное количество цифр. Введите 8 цифр для EAN-8 или 13 цифр для EAN-13.";
-          return;
-        }
-
-        // Проверка контрольной цифры
-        const type = sanitized.length === 8 ? "ean8" : "ean13";
-        const digits = sanitized.slice(0, sanitized.length - 1);
-        const checkDigit = sanitized[sanitized.length - 1];
-        const expected = this.computeCheckDigit(digits, type);
-
-        if (checkDigit !== expected) {
-          this.error = true;
-          this.errorMessage = `Контрольная цифра некорректна. Ожидалось: ${expected}`;
-        } else {
-          this.error = false;
-          this.errorMessage = "";
-        }
-      } catch (err) {
+      // Пустое поле
+      if (!sanitized) {
         this.error = true;
-        this.errorMessage = "Ошибка при проверке кода. Пожалуйста, попробуйте снова.";
+        this.errorMessage = "Поле пустое. Пожалуйста, введите цифры.";
+        return;
+      }
+
+      // Проверка длины
+      if (![8,13].includes(sanitized.length)) {
+        this.error = true;
+        this.errorMessage = "Неверное количество цифр. Введите 8 или 13 цифр.";
+        return;
+      }
+
+      // Проверка контрольной цифры
+      const type = sanitized.length === 8 ? "ean8" : "ean13";
+      const digits = sanitized.slice(0, sanitized.length - 1);
+      const checkDigit = sanitized[sanitized.length - 1];
+      const expected = this.computeCheckDigit(digits, type);
+
+      if (checkDigit !== expected) {
+        this.error = true;
+        this.errorMessage = `Контрольная цифра некорректна. Ожидалось: ${expected}`;
+      } else {
+        this.error = false;
+        this.errorMessage = "";
       }
     },
 
     /**
-     * Генерация штрихкода через API
+     * Генерация штрихкода через QuickChart API
      */
     async handleGenerate() {
       if (this.error) return;
@@ -154,16 +151,14 @@ document.addEventListener("alpine:init", () => {
       try {
         const sanitized = this.inputValue.replace(/\D/g, "");
         const type = sanitized.length === 8 ? "ean8" : "ean13";
-
         const screenWidth = Math.min(window.innerWidth * 0.95, 600);
         const height = 150;
 
         const url = `https://quickchart.io/barcode?type=${type}&text=${encodeURIComponent(sanitized)}&width=${Math.floor(screenWidth)}&height=${height}`;
-
-        // Проверка доступности сервиса
         const response = await fetch(url, { method: "HEAD" });
-        if (!response.ok) throw new Error("Сервис генерации временно недоступен, попробуйте позже.");
+        if (!response.ok) throw new Error("Сервис генерации временно недоступен. Попробуйте позже.");
 
+        // Отображение штрихкода
         this.barcodeUrl = url;
         this.inputValue = "";
         this.error = false;
@@ -177,7 +172,7 @@ document.addEventListener("alpine:init", () => {
   }));
 });
 
-// Настройка Telegram WebApp
+// Telegram WebApp: BackButton / CloseButton
 if (window.Telegram?.WebApp) {
   const tg = window.Telegram.WebApp;
   tg.ready();
