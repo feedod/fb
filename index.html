@@ -3,15 +3,13 @@ layout: default
 ---
 
 <main class="container">
-  <center>
-    <h4>Выберите сервис для запуска</h4>
-  </center>
+  <article>Выберите сервис для запуска</article>
 
   <p>
-    <a 
-      href="barcode.html" 
-      role="button" 
-      class="contrast" 
+    <a
+      href="barcode.html"
+      role="button"
+      class="contrast"
       style="width: 100%;"
     >
       Генератор штрихкодов
@@ -23,6 +21,7 @@ layout: default
 <script>
   if (window.Telegram?.WebApp) {
     const tg = window.Telegram.WebApp;
+
     tg.ready();
     tg.expand();
     tg.BackButton.hide();
