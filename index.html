@@ -8,27 +8,18 @@ layout: default
   </article>
 
   <p>
-    <a href="#" role="button" class="contrast" style="width: 100%;">
-      Contrast
+    <a href="/barcode.html" role="button" class="outline contrast" style="width: 100%;">
+      Генератор штрихкодов
     </a>
   </p>
 </main>
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
-  if (window.Telegram && window.Telegram.WebApp) {
+  if (window.Telegram?.WebApp) {
     const tg = window.Telegram.WebApp;
 
     tg.ready();
     tg.expand();
-
-    tg.MainButton.setParams({
-      text: "Закрыть",
-      color: "#0088cc",
-      text_color: "#ffffff"
-    });
-
-    tg.MainButton.show();
-    tg.MainButton.onClick(() => tg.close());
   }
 </script>
