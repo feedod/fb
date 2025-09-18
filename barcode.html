@@ -44,18 +44,12 @@ layout: default
     <template x-if="barcodeUrl">
       <div class="code-block">
         <img :src="barcodeUrl" alt="Штрихкод" class="barcode-img">
-        <button @click="downloadImage(barcodeUrl, 'barcode.png')" class="download-btn">
-          Скачать штрихкод
-        </button>
       </div>
     </template>
 
     <template x-if="qrCodeUrl">
       <div class="code-block">
         <img :src="qrCodeUrl" alt="QR-код" class="qr-img">
-        <button @click="downloadImage(qrCodeUrl, 'qrcode.png')" class="download-btn">
-          Скачать QR-код
-        </button>
       </div>
     </template>
   </div>
@@ -102,17 +96,6 @@ layout: default
     display: inline-block;
     margin-bottom: 0.5em;
   }
-  .download-btn {
-    padding: 0.6em 1.2em;
-    font-size: 0.9em;
-    border-radius: 4px;
-    border: 1px solid #28a745;
-    background-color: #28a745;
-    color: white;
-    cursor: pointer;
-    transition: background-color 0.2s ease-in-out;
-  }
-  .download-btn:hover { background-color: #218838; }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
@@ -191,23 +174,8 @@ document.addEventListener("alpine:init", () => {
         const screenWidth = Math.min(window.innerWidth * 0.95, 600);
         const height = 150;
 
-        const barcodeUrl = `https://quickchart.io/barcode?type=${type}&text=${encodeURIComponent(sanitized)}&width=${Math.floor(screenWidth)}&height=${height}`;
-        const qrUrl = `https://quickchart.io/qr?text=${encodeURIComponent(sanitized)}&size=200`;
-
-        const [barcodeResp, qrResp] = await Promise.allSettled([
-          fetch(barcodeUrl, { method: "HEAD" }),
-          fetch(qrUrl, { method: "HEAD" })
-        ]);
-
-        if (barcodeResp.status !== "fulfilled" || !barcodeResp.value.ok) {
-          throw new Error("Ошибка генерации штрихкода.");
-        }
-        if (qrResp.status !== "fulfilled" || !qrResp.value.ok) {
-          throw new Error("Ошибка генерации QR-кода.");
-        }
-
-        this.barcodeUrl = barcodeUrl;
-        this.qrCodeUrl = qrUrl;
+        this.barcodeUrl = `https://quickchart.io/barcode?type=${type}&text=${encodeURIComponent(sanitized)}&width=${Math.floor(screenWidth)}&height=${height}`;
+        this.qrCodeUrl = `https://quickchart.io/qr?text=${encodeURIComponent(sanitized)}&size=200`;
         this.error = false;
         this.errorMessage = "";
       } catch (err) {
@@ -215,22 +183,6 @@ document.addEventListener("alpine:init", () => {
         this.barcodeUrl = "";
         this.qrCodeUrl = "";
         this.errorMessage = err.message || "Неизвестная ошибка при генерации.";
-      }
-    },
-
-    async downloadImage(url, filename) {
-      try {
-        const resp = await fetch(url);
-        if (!resp.ok) throw new Error("Ошибка загрузки изображения.");
-        const blob = await resp.blob();
-        const link = document.createElement("a");
-        link.href = URL.createObjectURL(blob);
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      } catch (e) {
-        alert(e.message || "Ошибка скачивания файла.");
       }
     }
   }));
