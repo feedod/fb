@@ -3,31 +3,23 @@ layout: default
 ---
 
 <main class="container">
-  <h1>Генератор штрихкодов EAN</h1>
+  <h1>Генератор штрихкодов EAN-13</h1>
 
   <p>
     <input
-      type="text"
+      type="number"
       id="barcodeInput"
       name="number"
-      placeholder="Введите цифры"
+      placeholder="Введите 12 или 13 цифр"
+      min="100000000000"
+      max="9999999999999"
+      maxlength="13"
       style="width: 100%; padding: 0.5em; font-size: 1em; box-sizing: border-box;"
-      pattern="\d*"
-      inputmode="numeric"
     >
-  </p>
-
-  <p>
-    <button
-      id="generateButton"
-      style="width: 100%; padding: 0.5em; font-size: 1em; cursor: pointer;"
-    >
-      Сгенерировать
-    </button>
   </p>
 
   <p id="invalid-helper" style="color: red; font-size: 0.9em; display: none;">
-    Введите только цифры
+    Введите ровно 12 или 13 цифр
   </p>
 
   <div style="text-align: center; margin-top: 1em;">
@@ -44,26 +36,22 @@ layout: default
 <script>
   (function() {
     const input = document.getElementById("barcodeInput");
-    const button = document.getElementById("generateButton");
     const img = document.getElementById("barcodeImage");
     const invalidHelper = document.getElementById("invalid-helper");
 
     /**
-     * Генерация штрихкода EAN через Canvas и отображение в <img>
+     * Генерация штрихкода EAN-13 в <img>
      * @param {string} value
      */
     const generateBarcode = value => {
       const canvas = document.createElement("canvas");
       const containerWidth = img.clientWidth;
-      const barWidth = Math.max(containerWidth / (value.length * 8), 1);
-      const fontSize = Math.min(20, 150 / 7);
+      const barWidth = Math.max(containerWidth / (value.length * 10), 1);
 
       JsBarcode(canvas, value, {
         format: "EAN13",
         displayValue: true,
         textAlign: "center",
-        fontSize: fontSize,
-        textMargin: 5,
         width: barWidth,
         height: 150,
         margin: 0
@@ -73,28 +61,31 @@ layout: default
     };
 
     /**
-     * Проверка, что ввод содержит только цифры
+     * Проверка ввода и показ ошибки
      * @param {string} value
-     * @returns {boolean}
      */
-    const validateInput = value => /^\d+$/.test(value);
-
-    // Обработчик кнопки
-    button.addEventListener("click", () => {
-      const value = input.value.trim();
-
-      if (value === "" || !validateInput(value)) {
+    const validateInput = value => {
+      if (value === "") {
         img.src = "";
-        invalidHelper.style.display = "block";
+        invalidHelper.style.display = "none";
         return;
       }
 
-      generateBarcode(value);
-      invalidHelper.style.display = "none";
-      input.value = "";
+      if (/^\d{12,13}$/.test(value)) {
+        generateBarcode(value);
+        invalidHelper.style.display = "none";
+      } else {
+        img.src = "";
+        invalidHelper.style.display = "block";
+      }
+    };
+
+    input.addEventListener("input", () => {
+      const value = input.value.trim();
+      validateInput(value);
     });
 
-    // Настройка Telegram Web App
+    // Настройка кнопок Telegram Web App
     if (window.Telegram?.WebApp) {
       const tg = window.Telegram.WebApp;
       tg.ready();
