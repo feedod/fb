@@ -2,7 +2,7 @@
 layout: default
 ---
 
-<main class="container">
+<main class="container" id="appContent" style="display: none;">
   <article>
     Выберите сервис для запуска
   </article>
@@ -16,14 +16,21 @@ layout: default
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
-  if (window.Telegram?.WebApp) {
-    const tg = window.Telegram.WebApp;
+  (function() {
+    const appContent = document.getElementById("appContent");
 
+    // Проверяем, открыта ли страница в Telegram Web App
+    if (!window.Telegram?.WebApp) return;
+
+    const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
 
-    // Главное меню: скрываем кнопку "Назад", показываем "Закрыть"
+    // Главное меню: скрываем кнопку "Назад", показываем кнопку "Закрыть"
     tg.BackButton.hide();
     tg.CloseButton.show();
-  }
+
+    // Показываем контент только внутри TWA
+    appContent.style.display = "block";
+  })();
 </script>
