@@ -16,10 +16,10 @@ layout: default
 
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
-  (function() {
+  document.addEventListener("DOMContentLoaded", () => {
     const appContent = document.getElementById("appContent");
 
-    // Проверяем, открыта ли страница в Telegram Web App
+    // Проверка на наличие Telegram Web App
     if (!window.Telegram?.WebApp) return;
 
     const tg = window.Telegram.WebApp;
@@ -30,7 +30,7 @@ layout: default
     tg.BackButton.hide();
     tg.CloseButton.show();
 
-    // Показываем контент только внутри TWA
+    // Показываем контент только в TWA
     appContent.style.display = "block";
-  })();
+  });
 </script>
