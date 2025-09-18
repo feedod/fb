@@ -23,41 +23,39 @@ layout: default
   </p>
 
   <div style="text-align: center; margin-top: 1em;">
-    <img
-      id="barcodeImage"
-      style="width: 100%; height: auto; display: inline-block;"
-      alt="Сгенерированный штрихкод"
-    >
+    <svg
+      id="barcodeSVG"
+      style="width: 100%; height: 100px; display: inline-block;"
+    ></svg>
   </div>
 </main>
 
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
-  (function() {
+  (() => {
+    "use strict";
+
     const input = document.getElementById("barcodeInput");
-    const img = document.getElementById("barcodeImage");
+    const svg = document.getElementById("barcodeSVG");
     const invalidHelper = document.getElementById("invalid-helper");
 
     /**
-     * Генерация штрихкода EAN-13 в <img>
+     * Генерация штрихкода EAN-13 в <svg>
      * @param {string} value
      */
     const generateBarcode = value => {
-      const canvas = document.createElement("canvas");
-      const containerWidth = img.clientWidth;
-      const barWidth = Math.max(containerWidth / (value.length * 10), 1);
+      const containerWidth = svg.clientWidth;
+      const barWidth = Math.max(containerWidth / (value.length * 8), 0.5); // внутренний отступ 0.5px
 
-      JsBarcode(canvas, value, {
+      JsBarcode(svg, value, {
         format: "EAN13",
         displayValue: true,
         textAlign: "center",
         width: barWidth,
-        height: 150,
-        margin: 0
+        height: 100,
+        margin: 0.5
       });
-
-      img.src = canvas.toDataURL("image/png");
     };
 
     /**
@@ -66,7 +64,7 @@ layout: default
      */
     const validateInput = value => {
       if (value === "") {
-        img.src = "";
+        svg.innerHTML = "";
         invalidHelper.style.display = "none";
         return;
       }
@@ -75,7 +73,7 @@ layout: default
         generateBarcode(value);
         invalidHelper.style.display = "none";
       } else {
-        img.src = "";
+        svg.innerHTML = "";
         invalidHelper.style.display = "block";
       }
     };
