@@ -2,7 +2,7 @@
 layout: default
 ---
 
-<main class="container" id="appContent">
+<main class="container">
   <h1>Генератор штрихкодов EAN-13</h1>
 
   <p>
@@ -11,9 +11,6 @@ layout: default
       id="barcodeInput"
       name="number"
       placeholder="Введите 12 или 13 цифр"
-      aria-label="Number"
-      aria-invalid="false"
-      aria-describedby="invalid-helper"
       min="100000000000"
       max="9999999999999"
       maxlength="13"
@@ -21,14 +18,14 @@ layout: default
     >
   </p>
 
-  <small id="invalid-helper" style="display: none;">
+  <p id="invalid-helper" style="color: red; font-size: 0.9em; display: none;">
     Введите ровно 12 или 13 цифр
-  </small>
+  </p>
 
   <p>
     <svg
       id="barcodeSVG"
-      style="width: 100%; height: auto; display: block; margin: 1em auto 0 auto;"
+      style="width: 100%; height: 250px; display: block; margin: 1em auto 0 auto;"
     ></svg>
   </p>
 </main>
@@ -41,32 +38,44 @@ layout: default
     const svg = document.getElementById("barcodeSVG");
     const invalidHelper = document.getElementById("invalid-helper");
 
-    // Генерация штрихкода
+    /**
+     * Генерация штрихкода на всю ширину SVG
+     * @param {string} value - число для генерации EAN-13
+     */
     const generateBarcode = value => {
+      const containerWidth = svg.clientWidth;
+      const barWidth = Math.max(containerWidth / (value.length * 10), 1);
+
       JsBarcode(svg, value, {
         format: "EAN13",
         displayValue: true,
-        width: 2,
-        height: 100,
-        margin: 10
+        width: barWidth,
+        height: 250,
+        margin: 0
       });
     };
 
-    input.addEventListener("input", () => {
-      const value = input.value.trim();
-
+    /**
+     * Проверка введённого значения и показ ошибки
+     * @param {string} value
+     */
+    const validateInput = value => {
       if (/^\d{12,13}$/.test(value)) {
         generateBarcode(value);
-        input.setAttribute("aria-invalid", "false");
         invalidHelper.style.display = "none";
       } else {
         svg.innerHTML = "";
-        input.setAttribute("aria-invalid", "true");
         invalidHelper.style.display = "block";
       }
+    };
+
+    // Обработчик ввода
+    input.addEventListener("input", () => {
+      const value = input.value.trim();
+      validateInput(value);
     });
 
-    // Настройка кнопок TWA только если открыто в Telegram
+    // Настройка кнопок TWA (только если открыто в Telegram)
     if (window.Telegram?.WebApp) {
       const tg = window.Telegram.WebApp;
       tg.ready();
