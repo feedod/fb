@@ -14,20 +14,19 @@ layout: default
       pattern="[0-9]*"
       maxlength="13"
       x-model.trim="inputValue"
-      @input="validateEAN()"
+      @input="validateEAN"
       aria-describedby="hintText"
       :class="{'error-field': error}"
-      style="width: 100%; padding: 0.6em; font-size: 1em; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;"
+      class="input-field"
     >
   </p>
 
   <p
     id="hintText"
-    :style="{ color: error ? 'red' : '#555' }"
-    style="font-size: 0.9em; margin-top: 0.2em;"
     x-text="getHint()"
     role="status"
     aria-live="polite"
+    :class="error ? 'hint-text error' : 'hint-text normal'"
   ></p>
 
   <p>
@@ -35,26 +34,85 @@ layout: default
       @click="handleGenerate"
       :disabled="error || !inputValue"
       :class="{'disabled-button': error || !inputValue}"
-      style="width: 100%; padding: 0.7em; font-size: 1em; cursor: pointer; border-radius: 4px; border: 1px solid #007bff; background-color: #007bff; color: white;"
+      class="primary-btn"
     >
       Сгенерировать
     </button>
   </p>
 
-  <div style="text-align: center; margin-top: 1em;">
+  <div class="preview">
     <template x-if="barcodeUrl">
-      <img
-        :src="barcodeUrl"
-        alt="Сгенерированный штрихкод"
-        style="width: 100%; max-width: 600px; height: 150px; display: inline-block;"
-      >
+      <div class="code-block">
+        <img :src="barcodeUrl" alt="Штрихкод" class="barcode-img">
+        <button @click="downloadImage(barcodeUrl, 'barcode.png')" class="download-btn">
+          Скачать штрихкод
+        </button>
+      </div>
+    </template>
+
+    <template x-if="qrCodeUrl">
+      <div class="code-block">
+        <img :src="qrCodeUrl" alt="QR-код" class="qr-img">
+        <button @click="downloadImage(qrCodeUrl, 'qrcode.png')" class="download-btn">
+          Скачать QR-код
+        </button>
+      </div>
     </template>
   </div>
 </main>
 
 <style>
+  .input-field {
+    width: 100%;
+    padding: 0.6em;
+    font-size: 1em;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+  }
   .error-field { border-color: red !important; }
+  .hint-text { font-size: 0.9em; margin-top: 0.2em; }
+  .hint-text.normal { color: #555; }
+  .hint-text.error { color: red; }
+  .primary-btn {
+    width: 100%;
+    padding: 0.7em;
+    font-size: 1em;
+    border-radius: 4px;
+    border: 1px solid #007bff;
+    background-color: #007bff;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+  }
+  .primary-btn:hover:enabled { background-color: #0069d9; }
   .disabled-button { opacity: 0.6; cursor: not-allowed; }
+  .preview { text-align: center; margin-top: 1em; }
+  .code-block { margin-bottom: 1.5em; }
+  .barcode-img {
+    width: 100%;
+    max-width: 600px;
+    height: 150px;
+    display: inline-block;
+    margin-bottom: 0.5em;
+  }
+  .qr-img {
+    width: 200px;
+    height: 200px;
+    display: inline-block;
+    margin-bottom: 0.5em;
+  }
+  .download-btn {
+    padding: 0.6em 1.2em;
+    font-size: 0.9em;
+    border-radius: 4px;
+    border: 1px solid #28a745;
+    background-color: #28a745;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s ease-in-out;
+  }
+  .download-btn:hover { background-color: #218838; }
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
@@ -65,14 +123,15 @@ document.addEventListener("alpine:init", () => {
   Alpine.data("barcodeApp", () => ({
     inputValue: "",
     barcodeUrl: "",
+    qrCodeUrl: "",
     error: false,
     errorMessage: "",
 
     getHint() {
-      if (!this.inputValue) return "Введите 8 или 13 цифр для генерации штрихкода.";
+      if (!this.inputValue) return "Введите 8 или 13 цифр для генерации.";
       if (this.error) return this.errorMessage;
       const len = this.inputValue.length;
-      if (![8, 13].includes(len)) return "Должно быть 8 цифр для EAN-8 или 13 цифр для EAN-13.";
+      if (![8, 13].includes(len)) return "Должно быть 8 или 13 цифр.";
       return "Код готов к генерации.";
     },
 
@@ -88,35 +147,37 @@ document.addEventListener("alpine:init", () => {
     },
 
     validateEAN() {
-      const sanitized = this.inputValue.replace(/\D/g, "");
+      try {
+        const sanitized = this.inputValue.replace(/\D/g, "");
+        if (this.inputValue !== sanitized) this.inputValue = sanitized;
 
-      if (this.inputValue !== sanitized) {
-        this.inputValue = sanitized;
-      }
+        if (!sanitized) {
+          this.error = true;
+          this.errorMessage = "Поле пустое. Введите только цифры.";
+          return;
+        }
 
-      if (!sanitized) {
+        if (![8, 13].includes(sanitized.length)) {
+          this.error = true;
+          this.errorMessage = "Неверная длина. Нужно 8 или 13 цифр.";
+          return;
+        }
+
+        const type = sanitized.length === 8 ? "ean8" : "ean13";
+        const digits = sanitized.slice(0, -1);
+        const checkDigit = sanitized[sanitized.length - 1];
+        const expected = this.computeCheckDigit(digits, type);
+
+        if (checkDigit !== expected) {
+          this.error = true;
+          this.errorMessage = `Некорректная контрольная цифра. Ожидалось: ${expected}.`;
+        } else {
+          this.error = false;
+          this.errorMessage = "";
+        }
+      } catch (e) {
         this.error = true;
-        this.errorMessage = "Поле пустое. Введите только цифры.";
-        return;
-      }
-
-      if (![8, 13].includes(sanitized.length)) {
-        this.error = true;
-        this.errorMessage = "Неверная длина. Нужно 8 или 13 цифр.";
-        return;
-      }
-
-      const type = sanitized.length === 8 ? "ean8" : "ean13";
-      const digits = sanitized.slice(0, -1);
-      const checkDigit = sanitized[sanitized.length - 1];
-      const expected = this.computeCheckDigit(digits, type);
-
-      if (checkDigit !== expected) {
-        this.error = true;
-        this.errorMessage = `Некорректная контрольная цифра. Ожидалось: ${expected}.`;
-      } else {
-        this.error = false;
-        this.errorMessage = "";
+        this.errorMessage = "Ошибка при проверке кода.";
       }
     },
 
@@ -130,18 +191,46 @@ document.addEventListener("alpine:init", () => {
         const screenWidth = Math.min(window.innerWidth * 0.95, 600);
         const height = 150;
 
-        const url = `https://quickchart.io/barcode?type=${type}&text=${encodeURIComponent(sanitized)}&width=${Math.floor(screenWidth)}&height=${height}`;
+        const barcodeUrl = `https://quickchart.io/barcode?type=${type}&text=${encodeURIComponent(sanitized)}&width=${Math.floor(screenWidth)}&height=${height}`;
+        const qrUrl = `https://quickchart.io/qr?text=${encodeURIComponent(sanitized)}&size=200`;
 
-        const response = await fetch(url, { method: "HEAD" });
-        if (!response.ok) throw new Error("Сервис генерации недоступен. Попробуйте позже.");
+        const [barcodeResp, qrResp] = await Promise.allSettled([
+          fetch(barcodeUrl, { method: "HEAD" }),
+          fetch(qrUrl, { method: "HEAD" })
+        ]);
 
-        this.barcodeUrl = url;
+        if (barcodeResp.status !== "fulfilled" || !barcodeResp.value.ok) {
+          throw new Error("Ошибка генерации штрихкода.");
+        }
+        if (qrResp.status !== "fulfilled" || !qrResp.value.ok) {
+          throw new Error("Ошибка генерации QR-кода.");
+        }
+
+        this.barcodeUrl = barcodeUrl;
+        this.qrCodeUrl = qrUrl;
         this.error = false;
         this.errorMessage = "";
       } catch (err) {
         this.error = true;
         this.barcodeUrl = "";
+        this.qrCodeUrl = "";
         this.errorMessage = err.message || "Неизвестная ошибка при генерации.";
+      }
+    },
+
+    async downloadImage(url, filename) {
+      try {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error("Ошибка загрузки изображения.");
+        const blob = await resp.blob();
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      } catch (e) {
+        alert(e.message || "Ошибка скачивания файла.");
       }
     }
   }));
